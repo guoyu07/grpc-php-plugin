@@ -41,7 +41,7 @@
 
 namespace grpc_php_generator {
 
-inline std::string GetPHPServiceFilename(
+inline std::string GetPHPServiceFilenamePrefix(
     const google::protobuf::FileDescriptor *file,
     const google::protobuf::ServiceDescriptor *service) {
   std::vector<std::string> tokens =
@@ -51,7 +51,7 @@ inline std::string GetPHPServiceFilename(
     oss << (i == 0 ? "" : "/")
         << grpc_generator::CapitalizeFirstLetter(tokens[i]);
   }
-  return oss.str() + "/" + service->name() + "Client.php";
+  return oss.str() + "/" + service->name();
 }
 
 // Get leading or trailing comments in a string. Comment lines start with "// ".

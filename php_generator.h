@@ -39,7 +39,8 @@
 namespace grpc_php_generator {
 
 std::string GenerateFile(const google::protobuf::FileDescriptor *file,
-                          const google::protobuf::ServiceDescriptor *service);
+                          const google::protobuf::ServiceDescriptor *service,
+                          bool isInterface);
 
 }  // namespace grpc_php_generator
 

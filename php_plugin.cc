@@ -40,7 +40,7 @@
 #include "php_generator_helpers.h"
 
 using grpc_php_generator::GenerateFile;
-using grpc_php_generator::GetPHPServiceFilename;
+using grpc_php_generator::GetPHPServiceFilenamePrefix;
 
 class PHPGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
  public:
@@ -56,15 +56,28 @@ class PHPGrpcGenerator : public google::protobuf::compiler::CodeGenerator {
     }
 
     for (int i = 0; i < file->service_count(); i++) {
-      std::string code = GenerateFile(file, file->service(i));
+      {
+        std::string code = GenerateFile(file, file->service(i), false);
 
-      // Get output file name
-      std::string file_name = GetPHPServiceFilename(file, file->service(i));
+        std::string file_name = GetPHPServiceFilenamePrefix(file, file->service(i));
+        file_name += "Client.php";
 
-      std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
-          context->Open(file_name));
-      google::protobuf::io::CodedOutputStream coded_out(output.get());
-      coded_out.WriteRaw(code.data(), code.size());
+        std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
+            context->Open(file_name));
+        google::protobuf::io::CodedOutputStream coded_out(output.get());
+        coded_out.WriteRaw(code.data(), code.size());
+      }
+      {
+        std::string code = GenerateFile(file, file->service(i), true);
+
+        std::string file_name = GetPHPServiceFilenamePrefix(file, file->service(i));
+        file_name += ".php";
+
+        std::unique_ptr<google::protobuf::io::ZeroCopyOutputStream> output(
+            context->Open(file_name));
+        google::protobuf::io::CodedOutputStream coded_out(output.get());
+        coded_out.WriteRaw(code.data(), code.size());
+      }
     }
 
     return true;

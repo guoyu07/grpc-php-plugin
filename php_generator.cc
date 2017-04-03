@@ -58,7 +58,7 @@ std::string MessageIdentifierName(const std::string &name) {
   return oss.str();
 }
 
-void PrintMethod(const MethodDescriptor *method, Printer *out) {
+void PrintMethod(const MethodDescriptor *method, Printer *out, bool isInterface) {
   const Descriptor *input_type = method->input_type();
   const Descriptor *output_type = method->output_type();
   map<std::string, std::string> vars;
@@ -74,7 +74,14 @@ void PrintMethod(const MethodDescriptor *method, Printer *out) {
                " * @param array $$metadata metadata\n"
                " * @param array $$options call options\n */\n"
                "public function $name$($$metadata = [], "
-               "$$options = []) {\n");
+               "$$options = [])");
+
+    if (isInterface) {
+      out->Print(";\n");
+      return;
+    }
+
+    out->Print(" {\n");
     out->Indent();
     if (method->server_streaming()) {
       out->Print("return $$this->_bidiRequest(");
@@ -91,7 +98,14 @@ void PrintMethod(const MethodDescriptor *method, Printer *out) {
                " * @param array $$metadata metadata\n"
                " * @param array $$options call options\n */\n"
                "public function $name$(\\$input_type_id$ $$argument,\n"
-               "  $$metadata = [], $$options = []) {\n");
+               "  $$metadata = [], $$options = [])");
+
+    if (isInterface) {
+      out->Print(";\n");
+      return;
+    }
+
+    out->Print(" {\n");
     out->Indent();
     if (method->server_streaming()) {
       out->Print("return $$this->_serverStreamRequest(");
@@ -109,11 +123,27 @@ void PrintMethod(const MethodDescriptor *method, Printer *out) {
 }
 
 // Prints out the service descriptor object
+void PrintServiceInterface(const ServiceDescriptor *service, Printer *out) {
+  map<std::string, std::string> vars;
+  out->Print(GetPHPComments(service, "//").c_str());
+  vars["name"] = service->name();
+  out->Print(vars, "interface $name$ {\n");
+  out->Indent();
+  for (int i = 0; i < service->method_count(); i++) {
+    std::string method_name =
+        grpc_generator::LowercaseFirstLetter(service->method(i)->name());
+    PrintMethod(service->method(i), out, true);
+  }
+  out->Outdent();
+  out->Print("}\n");
+}
+
+// Prints out the service descriptor object
 void PrintService(const ServiceDescriptor *service, Printer *out) {
   map<std::string, std::string> vars;
   out->Print(GetPHPComments(service, "//").c_str());
   vars["name"] = service->name();
-  out->Print(vars, "class $name$Client extends \\Grpc\\BaseStub {\n\n");
+  out->Print(vars, "class $name$Client extends \\Grpc\\BaseStub implements $name$ {\n\n");
   out->Indent();
   out->Print(
       "/**\n * @param string $$hostname hostname\n"
@@ -129,7 +159,7 @@ void PrintService(const ServiceDescriptor *service, Printer *out) {
   for (int i = 0; i < service->method_count(); i++) {
     std::string method_name =
         grpc_generator::LowercaseFirstLetter(service->method(i)->name());
-    PrintMethod(service->method(i), out);
+    PrintMethod(service->method(i), out, false);
   }
   out->Outdent();
   out->Print("}\n\n");
@@ -137,7 +167,7 @@ void PrintService(const ServiceDescriptor *service, Printer *out) {
 }
 
 std::string GenerateFile(const FileDescriptor *file,
-                          const ServiceDescriptor *service) {
+                          const ServiceDescriptor *service, bool isInterface) {
   std::string output;
   {
     StringOutputStream output_stream(&output);
@@ -157,7 +187,11 @@ std::string GenerateFile(const FileDescriptor *file,
     out.Print(vars, "namespace $package$ {\n\n");
     out.Indent();
 
-    PrintService(service, &out);
+    if (isInterface) {
+      PrintServiceInterface(service, &out);
+    } else {
+      PrintService(service, &out);
+    }
 
     out.Outdent();
     out.Print("}\n");

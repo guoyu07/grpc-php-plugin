@@ -97,15 +97,15 @@ void PrintMethod(const MethodDescriptor *method, Printer *out, bool isInterface)
                " * @param \\$input_type_id$ $$argument input argument\n"
                " * @param array $$metadata metadata\n"
                " * @param array $$options call options\n */\n"
-               "public function $name$(\\$input_type_id$ $$argument,\n"
-               "  $$metadata = [], $$options = [])");
+               "public function $name$(\\$input_type_id$ $$argument,"
+               " $$metadata = [], $$options = []) : \\$output_type_id$");
 
     if (isInterface) {
       out->Print(";\n");
       return;
     }
 
-    out->Print(" {\n");
+    out->Print("\n{\n");
     out->Indent();
     if (method->server_streaming()) {
       out->Print("return $$this->_serverStreamRequest(");
@@ -113,9 +113,9 @@ void PrintMethod(const MethodDescriptor *method, Printer *out, bool isInterface)
       out->Print("return $$this->_simpleRequest(");
     }
     out->Print(vars,
-               "'/$service_name$/$name$',\n"
-               "$$argument,\n"
-               "['\\$output_type_id$', 'decode'],\n"
+               "'/$service_name$/$name$', "
+               "$$argument, "
+               "['\\$output_type_id$', 'decode'], "
                "$$metadata, $$options);\n");
   }
   out->Outdent();
@@ -127,7 +127,7 @@ void PrintServiceInterface(const ServiceDescriptor *service, Printer *out) {
   map<std::string, std::string> vars;
   out->Print(GetPHPComments(service, "//").c_str());
   vars["name"] = service->name();
-  out->Print(vars, "interface $name$ {\n");
+  out->Print(vars, "interface $name$\n{\n");
   out->Indent();
   for (int i = 0; i < service->method_count(); i++) {
     std::string method_name =
@@ -143,7 +143,7 @@ void PrintService(const ServiceDescriptor *service, Printer *out) {
   map<std::string, std::string> vars;
   out->Print(GetPHPComments(service, "//").c_str());
   vars["name"] = service->name();
-  out->Print(vars, "class $name$Client extends \\Grpc\\BaseStub implements $name$ {\n\n");
+  out->Print(vars, "class $name$Client extends \\Grpc\\BaseStub implements $name$\n{\n");
   out->Indent();
   out->Print(
       "/**\n * @param string $$hostname hostname\n"
@@ -151,7 +151,7 @@ void PrintService(const ServiceDescriptor *service, Printer *out) {
       " * @param \\Grpc\\Channel $$channel (optional) re-use channel "
       "object\n */\n"
       "public function __construct($$hostname, $$opts, "
-      "$$channel = null) {\n");
+      "$$channel = null)\n{\n");
   out->Indent();
   out->Print("parent::__construct($$hostname, $$opts, $$channel);\n");
   out->Outdent();
@@ -184,17 +184,13 @@ std::string GenerateFile(const FileDescriptor *file,
 
     map<std::string, std::string> vars;
     vars["package"] = MessageIdentifierName(file->package());
-    out.Print(vars, "namespace $package$ {\n\n");
-    out.Indent();
+    out.Print(vars, "namespace $package$;\n\n");
 
     if (isInterface) {
       PrintServiceInterface(service, &out);
     } else {
       PrintService(service, &out);
     }
-
-    out.Outdent();
-    out.Print("}\n");
   }
   return output;
 }
